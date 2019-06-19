@@ -1,0 +1,74 @@
+<html style="margin: 0px; padding: 0px">
+<head>
+  
+</head>
+<body style="margin: 0px; padding: 0px">
+  <canvas id="canvas" width="800" height="200"></canvas>
+  <script type="text/javascript">
+    const urlParams = new URLSearchParams(window.location.search)
+    const url = urlParams.get('url')
+    if (url) {
+      initAudio(url)
+        .then(renderCanvas)
+    } else {
+      window.FailedRender({ error: 'GET-URL' })
+    }
+
+    function initAudio(url) {
+      return new Promise((resolve) => {
+        var xhr = new XMLHttpRequest();
+        
+        xhr.open("GET", url, true);
+        xhr.responseType = "arraybuffer";
+        xhr.onload = function () {
+          const audioContext = new window.AudioContext()
+          audioContext.decodeAudioData(xhr.response, (buffer) => {
+            const data = buffer.getChannelData(0)
+            resolve(data)
+          });
+        }
+        const onError = function (e) {
+          window.FailedRender({ error: 'GET-MP3-ERR', detail: e })
+        }
+
+        xhr.onerror = onError
+        xhr.ontimeout = onError
+        xhr.onabort = onError
+        xhr.send();
+      })
+    }
+    function renderCanvas (data) {
+      const canvas = document.getElementById("canvas")
+      width = canvas.clientWidth
+      height = canvas.clientHeight
+      
+      const ctx = canvas.getContext('2d')
+      const step = Math.ceil(data.length / width)
+      const amp = (height / 2)
+      
+      for (var i = 0; i < width; i++) {
+        let max = 0.01
+        
+        for (let j = 0; j < step; j++) {
+          let datum = data[(i * step * 3) + j]
+          if (datum > max) {
+            max = datum
+          }
+        }
+        
+        ctx.translate(0, height / 2)
+        ctx.scale(1, -1)
+        
+        ctx.fillStyle = '#00aaff'
+        ctx.fillRect(i * 3, -10, 2, max * amp)
+        ctx.setTransform(1, 0, 0, 1, 0, 0)
+        ctx.fillStyle = '#44ccff'
+        ctx.fillRect(i * 3, height / 2 + 12, 2, max * amp / 2)
+      }
+
+      window.FinishRender()
+    }
+  </script>
+  
+</body>
+</html>
