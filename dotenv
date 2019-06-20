@@ -1,0 +1,3 @@
+#  rename this file to .env and update the values
+TOKEN=12345
+TIMEOUT=60000
